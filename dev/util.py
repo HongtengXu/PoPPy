@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # standard data directory names
-POPPY_PATH = "/Users/hongtengxu/PycharmProjects/PopPy"
+POPPY_PATH = "/Users/hongtengxu/Documents/PoPPy"
 DATA_DIR = "data"
 PREPROCESSED_DIR = "preprocess"
 MODEL_DIR = "model"
