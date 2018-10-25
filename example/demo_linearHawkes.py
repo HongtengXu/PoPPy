@@ -13,7 +13,7 @@ from preprocess.DataIO import load_sequences_csv
 from preprocess.DataOperation import data_info, EventSampler, enumerate_all_events
 
 # hyper-parameters
-memory_size = 10
+memory_size = 2
 batch_size = 128
 use_cuda = False
 use_cuda = use_cuda and torch.cuda.is_available()
