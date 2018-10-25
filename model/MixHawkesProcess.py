@@ -473,19 +473,17 @@ class MixHawkesProcessModel(object):
         counts_total /= num_trial
         return counts_total
 
-    def plot_exogenous(self, sample_dict, cluster_id: List = None, output_name: str = None):
+    def plot_exogenous(self, sample_dict, cluster_id: int = None, output_name: str = None):
         if cluster_id is None:
-            cluster_id = range(self.num_cluster)
-        for m in cluster_id:
-            intensity = self.lambda_model[m].exogenous_intensity.intensity(sample_dict)
-            self.lambda_model[m].exogenous_intensity.save_and_plot(intensity, output_name)
+            cluster_id = 0
+        intensity = self.lambda_model[cluster_id].exogenous_intensity.intensity(sample_dict)
+        self.lambda_model[cluster_id].exogenous_intensity.plot_and_save(intensity, output_name)
 
-    def plot_causality(self, sample_dict, cluster_id: List = None, output_name: str = None):
+    def plot_causality(self, sample_dict, cluster_id: int = None, output_name: str = None):
         if cluster_id is None:
-            cluster_id = range(self.num_cluster)
-        for m in cluster_id:
-            infectivity = self.lambda_model[m].endogenous_intensity.granger_causality(sample_dict)
-            self.lambda_model[m].endogenous_intensity.save_and_plot(infectivity, output_name)
+            cluster_id = 0
+        infectivity = self.lambda_model[cluster_id].endogenous_intensity.granger_causality(sample_dict)
+        self.lambda_model[cluster_id].endogenous_intensity.plot_and_save(infectivity, output_name)
 
     def save_model(self, full_path, mode: str = 'entire'):
         """
