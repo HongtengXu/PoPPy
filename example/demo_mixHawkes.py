@@ -22,7 +22,7 @@ torch.manual_seed(seed)
 if use_cuda:
     torch.cuda.manual_seed(seed)
 kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
-epochs = 5
+epochs = 50
 
 # test sequence loading functions
 # load event sequences from csv file

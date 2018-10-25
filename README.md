@@ -69,6 +69,12 @@ More details can be found in [tutorial](https://arxiv.org/pdf/1810.10122.pdf) an
   year={2018}
 }
 
+## Tricks
+* Generally, the parameters of exogenous intensity and those of endogenous impact are not in a same scale, i.e., mu ~ O(1/C) and alpha ~ O(1/C^2). When learning the model, different learning rates should be applied to different parameters adaptively. Therefore, although all SGD optimizers in PyTorch are usable, Adam is the recommended choice.
+* When softplus activation is applied to a model, we'd better turn the sparsity and nonnegative contraints off.
+* When training the mixture model of Hawkes processes, we need to select a large epoch to get meaningful clustering results. I found that in the initial phase, the distribution of clusters will be very imbalanced, i.e., most of sequences will be categorized into one cluster. Fortunately, with the increase of epochs, the distribution will be rebalanced and the sizes of different clusters will be comparable. 
+  
+
 ## On going 
 * Debugging GPU version demo
 * Implementing mixture models of point processes
