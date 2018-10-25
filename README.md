@@ -61,8 +61,17 @@ For Hawkes processes, multiple decay kernels are applicable:
 ## Usage
 More details can be found in [tutorial](https://arxiv.org/pdf/1810.10122.pdf) and the pdf files in the folder "docs". 
 
+## Citation
+@article{xu2018poppy,
+  title={PoPPy: A Point Process Toolbox Based on PyTorch},
+  author={Xu, Hongteng},
+  journal={arXiv preprint arXiv:1810.10122},
+  year={2018}
+}
+
 ## On going 
 * Debugging GPU version demo
 * Implementing mixture models of point processes
 * Adding more examples
+* Documentation
 
