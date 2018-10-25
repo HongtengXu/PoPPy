@@ -10,9 +10,10 @@ from torch.utils.data import DataLoader
 import dev.util as util
 from model.MixHawkesProcess import MixHawkesProcessModel
 from preprocess.DataIO import load_sequences_csv
-from preprocess.DataOperation import data_info, EventSampler
+from preprocess.DataOperation import data_info, EventSampler, enumerate_all_events
 
 # hyper-parameters
+num_cluster = 3
 memory_size = 3
 batch_size = 128
 use_cuda = True
@@ -55,32 +56,48 @@ kernel_para = np.zeros((2, 1))
 kernel_para[1, 0] = 0.5
 kernel_dict = {'model_name': 'GateKernel',
                'parameter_set': kernel_para}
-hawkes_model = MixHawkesProcessModel(num_type=num_type,
-                                     num_cluster=3,
-                                     num_sequence=len(database['seq2idx']),
-                                     mu_dict=[mu_dict],
-                                     alpha_dict=[alpha_dict],
-                                     kernel_dict=[kernel_dict],
-                                     activation='identity')
+mixhawkes_model = MixHawkesProcessModel(num_type=num_type,
+                                        num_cluster=num_cluster,
+                                        num_sequence=len(database['seq2idx']),
+                                        mu_dict=[mu_dict],
+                                        alpha_dict=[alpha_dict],
+                                        kernel_dict=[kernel_dict],
+                                        activation='identity')
 
 # initialize optimizer
-optimizer = optim.Adam(hawkes_model.lambda_model.parameters(), lr=0.01)
+optimizer = optim.Adam(mixhawkes_model.lambda_model.parameters(), lr=0.01)
 scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.8)
 
 # train model
-hawkes_model.fit(trainloader, optimizer, epochs, scheduler=scheduler,
-                 sparsity=100, nonnegative=0, use_cuda=use_cuda, validation_set=validloader)
+mixhawkes_model.fit(trainloader, optimizer, epochs, scheduler=scheduler,
+                    sparsity=100, nonnegative=0, use_cuda=use_cuda, validation_set=validloader)
 # save model
-hawkes_model.save_model('{}/{}/full_mix.pt'.format(util.POPPY_PATH, util.OUTPUT_DIR), mode='entire')
-hawkes_model.save_model('{}/{}/para_mix.pt'.format(util.POPPY_PATH, util.OUTPUT_DIR), mode='parameter')
+mixhawkes_model.save_model('{}/{}/full_mix.pt'.format(util.POPPY_PATH, util.OUTPUT_DIR), mode='entire')
+mixhawkes_model.save_model('{}/{}/para_mix.pt'.format(util.POPPY_PATH, util.OUTPUT_DIR), mode='parameter')
 
 # load model
-hawkes_model.load_model('{}/{}/full_mix.pt'.format(util.POPPY_PATH, util.OUTPUT_DIR), mode='entire')
+mixhawkes_model.load_model('{}/{}/full_mix.pt'.format(util.POPPY_PATH, util.OUTPUT_DIR), mode='entire')
+
+
+for n in range(num_cluster):
+    # plot exogenous intensity
+    all_events = enumerate_all_events(database, seq_id=1, use_cuda=use_cuda)
+    mixhawkes_model.plot_exogenous(all_events,
+                                   cluster_id=n,
+                                   output_name='{}/{}/exogenous_mixHawkes_cluster{}.png'.format(util.POPPY_PATH,
+                                                                                                util.OUTPUT_DIR,
+                                                                                                n))
+    # plot endogenous Granger causality
+    mixhawkes_model.plot_causality(all_events,
+                                   cluster_id=n,
+                                   output_name='{}/{}/causality_mixHawkes_cluster{}.png'.format(util.POPPY_PATH,
+                                                                                                util.OUTPUT_DIR,
+                                                                                                n))
 
 # simulate new data based on trained model
-new_data, counts = hawkes_model.simulate(history=database,
-                                         memory_size=memory_size,
-                                         time_window=5,
-                                         interval=1.0,
-                                         max_number=10,
-                                         use_cuda=use_cuda)
+new_data, counts = mixhawkes_model.simulate(history=database,
+                                            memory_size=memory_size,
+                                            time_window=5,
+                                            interval=1.0,
+                                            max_number=10,
+                                            use_cuda=use_cuda)
