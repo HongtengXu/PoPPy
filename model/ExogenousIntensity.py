@@ -108,7 +108,7 @@ class BasicExogenousIntensity(nn.Module):
         mu_all = mu_all.data.numpy()
 
         plt.figure(figsize=(5, 5))
-        plt.stem(range(mu_all.shape[0]), mu_all, '-', c='r')
+        plt.stem(range(mu_all.shape[0]), mu_all, '-')
         plt.ylabel('Exogenous intensity')
         plt.xlabel('Index of event type')
         if output_name is None:
