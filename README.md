@@ -78,7 +78,7 @@ More details can be found in [tutorial](https://arxiv.org/abs/1810.10122) and th
   
 
 ## On going 
-* Implementing mixture models of point processes
+* Integrate more advanced models
 * Adding more examples
 * Documentation
 * Optimizing code framework and data structure to achieve further acceleration
