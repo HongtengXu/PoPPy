@@ -6,8 +6,9 @@ A Point Process Toolbox Based on PyTorch
 **PoPPy** is a machine learning toolbox focusing on point process model, which achieves rich functionality on data operations, high flexibility on model design and high scalability on optimization.
 
 
+## Recent updates
+* PoPPy starts to support GPU-based computation. For feature-based model and large-scale dataset with lots of event types, the learning process is accelerated.  
 ## Data operations
-
 * Import event sequences and their features from csv files
 * Random and/or feature-based event sequence stitching
 * Random and/or feature-based event sequence superposing
@@ -16,7 +17,6 @@ A Point Process Toolbox Based on PyTorch
 
 
 ## Models
-
 * Poisson process
 * linear Hawkes process
 * nonlinear Hawkes process
@@ -26,14 +26,12 @@ A Point Process Toolbox Based on PyTorch
 
 
 ## Loss functions
-
 * Maximum likelihood estimation
 * Least-square estimation
 * Conditional likelihood estimation
 
 
 ## Decay kernels
-
 For Hawkes processes, multiple decay kernels are applicable:
 * Exponential kernel
 * Rayleigh kernel
@@ -44,7 +42,6 @@ For Hawkes processes, multiple decay kernels are applicable:
 
 
 ## Optimization
-
 * SGD based on learning algorithms
 * Support CPU or GPU-based computations
 
@@ -53,13 +50,18 @@ For Hawkes processes, multiple decay kernels are applicable:
 * Ogata's thinning algorithm
 
 
+## Platform
+* I developed and tested PoPPy on MacOS>=10.13, Ubuntu=16.04LTS, and Windows10 (Conda environment)
+
+
 ## Installation
-* Step 1: Install Anaconda3 and PyTorch 0.4
+* Step 1: Install Anaconda3 and PyTorch 1.0
 * Step 2: Download the package and unzip it
 * Step 3: Change "POPPY_PATH" in dev/util.py to the directory of the downloaded package.
 
+
 ## Usage
-More details can be found in [tutorial](https://arxiv.org/pdf/1810.10122.pdf) and the pdf files in the folder "docs". 
+More details can be found in [tutorial](https://arxiv.org/abs/1810.10122) and the pdf files in the folder "docs". 
 
 ## Citation
 @article{xu2018poppy,
@@ -76,8 +78,7 @@ More details can be found in [tutorial](https://arxiv.org/pdf/1810.10122.pdf) an
   
 
 ## On going 
-* Debugging GPU version demo
 * Implementing mixture models of point processes
 * Adding more examples
 * Documentation
-
+* Optimizing code framework and data structure to achieve further acceleration
