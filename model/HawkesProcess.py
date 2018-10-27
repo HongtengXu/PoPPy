@@ -90,7 +90,7 @@ class HawkesProcessModel(PointProcessModel):
     contains most of necessary function.
     """
 
-    def __init__(self, num_type, mu_dict, alpha_dict, kernel_dict, activation, loss_type):
+    def __init__(self, num_type, mu_dict, alpha_dict, kernel_dict, activation, loss_type, use_cuda):
         """
         Initialize generalized Hawkes process
         :param num_type: int, the number of event types.
@@ -108,7 +108,7 @@ class HawkesProcessModel(PointProcessModel):
             The length of the list is the number of modalities of the model
             Each element of the list is the number of event categories for each modality
         """
-        super(HawkesProcessModel, self).__init__(num_type, mu_dict, loss_type)
+        super(HawkesProcessModel, self).__init__(num_type, mu_dict, loss_type, use_cuda)
         self.model_name = 'A Hawkes Process'
         # self.num_type = num_type
         self.activation = activation
@@ -117,7 +117,8 @@ class HawkesProcessModel(PointProcessModel):
         decayKernel = getattr(model.DecayKernelFamily, kernel_dict['model_name'])
 
         mu_model = exogenousIntensity(num_type, mu_dict['parameter_set'])
-        kernel_model = decayKernel(kernel_dict['parameter_set'])
+        kernel_para = kernel_dict['parameter_set'].to(self.device)
+        kernel_model = decayKernel(kernel_para)
         alpha_model = endogenousImpacts(num_type, kernel_model, alpha_dict['parameter_set'])
 
         self.lambda_model = HawkesProcessIntensity(mu_model, alpha_model, self.activation)

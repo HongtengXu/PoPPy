@@ -26,9 +26,9 @@ class LowerBoundClipper(object):
         if hasattr(module, 'weight'):
             w = module.weight.data
             w[w < self.bound] = self.bound
-        if hasattr(module, 'bias'):
-            w = module.bias.data
-            w[w < self.bound] = self.bound
+        # if hasattr(module, 'bias'):
+        #     w = module.bias.data
+        #     w[w < self.bound] = self.bound
 
 
 class MaxLogLike(nn.Module):

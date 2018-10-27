@@ -14,6 +14,7 @@ Written by Hongteng Xu, on Sep. 4, 2018
 from dev.util import logger
 from typing import Optional
 import numpy as np
+import torch
 import matplotlib.pyplot as plt
 
 
@@ -21,7 +22,7 @@ class BasicDecayKernel(object):
     """
     The parent class of decay functions, which actually an exponential kernel
     """
-    def __init__(self, parameters: np.ndarray):
+    def __init__(self, parameters: torch.Tensor):
         """
         Initialize decay functions
         exponential
@@ -37,52 +38,60 @@ class BasicDecayKernel(object):
         Print basic information of the kernel model.
         """
         logger.info('The type of decay kernel: {}.'.format(self.kernel_type))
-        logger.info('The number of basis = {}.'.format(self.parameters.shape[1]))
+        logger.info('The number of basis = {}.'.format(self.parameters.size(1)))
+        # logger.info('The number of basis = {}.'.format(self.parameters.shape[1]))
 
-    def values(self, dt: np.ndarray) -> np.ndarray:
+    def values(self, dt: torch.Tensor) -> torch.Tensor:
         """
         Calculate decay kernel's value at time 'dt'
-        :param dt: the ndarray containing the time intervals between current event and historical ones
+        :param dt: a 2D Tensor containing the time intervals between current event and historical ones
         :return:
-            gt: the ndarray containing decay kernel's values at different time.
+            gt: a Tensor containing decay kernel's values at different time.
         """
         delay = self.parameters[0, 0]
         bandwidth = self.parameters[1, 0]
-        w = np.sqrt(1 / bandwidth)
+        # w = np.sqrt(1 / bandwidth)
+        w = torch.sqrt(1 / bandwidth)  # ** 0.5
 
         dt2 = dt - delay
-        gt = w * np.exp(-w * dt2)
+        # gt = w * np.exp(-w * dt2)
+        gt = w * torch.exp(-w * dt2)
         gt[dt2 < 0] = 0
-        gt2 = np.zeros((dt.shape[0], dt.shape[1], 1))
-        gt2[:, :, 0] = gt
+        # gt2 = np.zeros((dt.shape[0], dt.shape[1], 1))
+        # gt2[:, :, 0] = gt
+        gt2 = gt.view(gt.size(0), gt.size(1), 1)
         return gt2
 
-    def integrations(self, t_stop: np.ndarray, t_start: Optional[np.ndarray] = None) -> np.ndarray:
+    def integrations(self, t_stop: torch.Tensor, t_start: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         Calculate the integrations of decay kernel in the interval [t_start, t_stop]
-        :param t_stop: an ndarray containing stop timestamps
-        :param t_start: an ndarray containing start timestamps, if it is None, it means t_start = 0
+        :param t_stop: a 2D Tensor containing stop timestamps
+        :param t_start: a 2D Tensor containing start timestamps, if it is None, it means t_start = 0
         :return:
             gt: the ndarray containing decay kernel's integration values in the interval [t_start, t_stop].
         """
         if t_start is None:
-            t_start = np.zeros(t_stop.shape)
+            t_start = 0 * t_stop
 
-        if t_start.shape != t_stop.shape:
-            logger.info(f"The t_start does not have the same shape with t_stop, we set t_start to all zeros")
-            t_start = np.zeros(t_stop.shape)
+        if t_start.size() != t_stop.size():
+            logger.warning(f"The t_start does not have the same shape with t_stop, we set t_start to all zeros")
+            t_start = 0 * t_stop
 
         delay = self.parameters[0, 0]
         bandwidth = self.parameters[1, 0]
-        w = np.sqrt(1 / bandwidth)
-        gt_start = np.exp(-w * (t_start - delay))
+        # w = np.sqrt(1 / bandwidth)
+        w = torch.sqrt(1 / bandwidth)
+        # gt_start = np.exp(-w * (t_start - delay))
+        gt_start = (-w * (t_start - delay)).exp()
         gt_start[gt_start > 1] = 1
-        gt_stop = np.exp(-w * (t_stop - delay))
+        # gt_stop = np.exp(-w * (t_stop - delay))
+        gt_stop = (-w * (t_stop - delay)).exp()
         gt_stop[gt_stop > 1] = 1
 
         gt_d = gt_stop - gt_start
-        gt = np.zeros((gt_d.shape[0], gt_d.shape[1], 1))
-        gt[:, :, 0] = -gt_d
+        # gt = np.zeros((gt_d.shape[0], gt_d.shape[1], 1))
+        # gt[:, :, 0] = -gt_d
+        gt = -gt_d.view(gt_d.size(0), gt_d.size(1), 1)
         return gt
 
     def plot_and_save(self, t_stop: float = 5.0, output_name: str = None):
@@ -95,14 +104,17 @@ class BasicDecayKernel(object):
 
         dt = np.arange(0.0, t_stop, 0.01)
         dt = np.tile(dt, (1, 1))
+        dt = torch.from_numpy(dt)
+        dt = dt.type(torch.FloatTensor)
         gt = self.values(dt)
+        # t_start = torch.zeros(dt.size())
         igt = self.integrations(dt)
         # print(gt.shape)
 
         plt.figure(figsize=(5, 5))
         for k in range(gt.shape[2]):
-            plt.plot(dt[0, :], gt[0, :, k], label='g_{}(t)'.format(k), c='r')
-            plt.plot(dt[0, :], igt[0, :, k], label='G_{}(t)'.format(k), c='b')
+            plt.plot(dt[0, :].cpu().numpy(), gt[0, :, k].cpu().numpy(), label='g_{}(t)'.format(k), c='r')
+            plt.plot(dt[0, :].cpu().numpy(), igt[0, :, k].cpu().numpy(), label='G_{}(t)'.format(k), c='b')
         leg = plt.legend(loc='upper left', ncol=1, shadow=True, fancybox=True)
         leg.get_frame().set_alpha(0.5)
         plt.title('{} decay kernel and its integration'.format(self.kernel_type))

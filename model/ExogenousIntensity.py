@@ -105,7 +105,7 @@ class BasicExogenousIntensity(nn.Module):
         :param output_name: the name of the output png file
         """
         mu_all = mu_all.squeeze(1)  # (C,)
-        mu_all = mu_all.data.numpy()
+        mu_all = mu_all.data.cpu().numpy()
 
         plt.figure(figsize=(5, 5))
         plt.stem(range(mu_all.shape[0]), mu_all, '-')

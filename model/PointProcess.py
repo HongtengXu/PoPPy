@@ -18,7 +18,7 @@ class PointProcessModel(object):
     contains most of necessary function.
     """
 
-    def __init__(self, num_type, mu_dict, loss_type):
+    def __init__(self, num_type, mu_dict, loss_type, use_cuda):
         """
         Initialize generalized Hawkes process
         :param num_type: int, the number of event types.
@@ -26,6 +26,7 @@ class PointProcessModel(object):
             The length of the list is the number of modalities of the model
             Each element of the list is the number of event categories for each modality
         """
+        self.device = torch.device('cuda:0' if use_cuda else 'cpu')
         self.model_name = 'A Poisson Process'
         self.num_type = num_type
         exogenousIntensity = getattr(model.ExogenousIntensityFamily, mu_dict['model_name'])
@@ -235,6 +236,7 @@ class PointProcessModel(object):
 
             # initialize the input of intensity function
             ci = Cs[1:, :]
+            ci = ci.to(device)
             ti = torch.FloatTensor([t_now])
             ti = ti.to(device)
             ti = ti.view(1, 1)
@@ -244,18 +246,24 @@ class PointProcessModel(object):
             times = history['sequences'][i]['times']
             if times is None:
                 tjs = torch.FloatTensor([new_data['sequences'][i]['t_start']])
+                tjs = tjs.to(device)
                 cjs = torch.LongTensor([0])
+                cjs = cjs.to(device)
             else:
                 if memory_size > times.shape[0]:
                     tjs = torch.from_numpy(times)
                     tjs = tjs.type(torch.FloatTensor)
+                    tjs = tjs.to(device)
                     cjs = torch.from_numpy(events)
                     cjs = cjs.type(torch.LongTensor)
+                    cjs = cjs.to(device)
                 else:
                     tjs = torch.from_numpy(times[-memory_size:])
                     tjs = tjs.type(torch.FloatTensor)
+                    tjs = tjs.to(device)
                     cjs = torch.from_numpy(events[-memory_size:])
                     cjs = cjs.type(torch.LongTensor)
+                    cjs = cjs.to(device)
 
             tjs = tjs.to(device)
             tjs = tjs.view(1, -1)
@@ -274,6 +282,7 @@ class PointProcessModel(object):
                 fsn = torch.from_numpy(fsn)
                 fsn = fsn.type(torch.FloatTensor)
                 fsn = fsn.view(1, -1).repeat(ci.size(0), 1)
+                fsn = fsn.to(device)
             else:
                 fsn = None
 
@@ -284,6 +293,7 @@ class PointProcessModel(object):
                 fci = FCs[ci[:, 0], :]
                 fcjs = FCs[cjs, :]
                 fcjs = torch.transpose(fcjs, 1, 2)
+                fcjs = fcjs.to(device)
 
             sample_dict = {'ti': ti,
                            'tjs': tjs,
@@ -305,7 +315,7 @@ class PointProcessModel(object):
                 s = np.random.exponential(1 / mt)
                 if s < interval:
                     sample_dict['ti'] = sample_dict['ti'] + s - interval
-                    ti = sample_dict['ti'].numpy()
+                    ti = sample_dict['ti'].cpu().numpy()
                     t_now = ti[0, 0]  # float
                     lambda_s = self.lambda_model.intensity(sample_dict)
                     ms = float(lambda_s.sum())
@@ -313,7 +323,7 @@ class PointProcessModel(object):
                     u = np.random.rand()
                     ratio = ms/mt
                     if ratio > u:  # generate a new event
-                        prob = lambda_s.data.numpy()/ms
+                        prob = lambda_s.data.cpu().numpy()/ms
                         prob = prob[:, 0]
                         ci = np.random.choice(self.num_type-1, p=prob)+1  # int
 
@@ -339,7 +349,7 @@ class PointProcessModel(object):
                             sample_dict['fcjs'] = FCs[sample_dict['cjs'], :]
                             sample_dict['fcjs'] = torch.transpose(sample_dict['fcjs'], 1, 2)
                 else:
-                    ti = sample_dict['ti'].numpy()
+                    ti = sample_dict['ti'].cpu().numpy()
                     t_now = ti[0, 0]  # float
 
             if i % 500 == 0:

@@ -175,7 +175,7 @@ class BasicEndogenousImpact(nn.Module):
         :param infect: a (num_type, num_type+1, M) FloatTensor containing all endogenous impact
         :param output_name: the name of the output png file
         """
-        impact = infect.sum(2).data.numpy()
+        impact = infect.sum(2).data.cpu().numpy()
         plt.figure(figsize=(5, 5))
         plt.imshow(impact)
         plt.colorbar()

@@ -98,9 +98,10 @@ class NaiveEndogenousImpact(BasicEndogenousImpact):
         history = sample_dict['cjs']       # (batch_size, memory_size)
 
         dts = event_time.repeat(1, history_time.size(1)) - history_time  # (batch_size, memory_size)
-        gt = self.decay_kernel.values(dts.numpy())
-        gt = torch.from_numpy(gt)
-        gt = gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
+        # gt = self.decay_kernel.values(dts.numpy())
+        # gt = torch.from_numpy(gt)
+        # gt = gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
+        gt = self.decay_kernel.values(dts)
 
         phi_c = 0
         for m in range(self.num_base):
@@ -138,9 +139,10 @@ class NaiveEndogenousImpact(BasicEndogenousImpact):
         last_time = history_time[:, -1].unsqueeze(1)
         t_start = last_time.repeat(1, history_time.size(1)) - history_time  # (batch_size, memory_size)
         t_stop = dts                                                        # (batch_size, memory_size)
-        Gt = self.decay_kernel.integrations(t_stop.numpy(), t_start.numpy())
-        Gt = torch.from_numpy(Gt)
-        Gt = Gt.type(torch.FloatTensor)                                     # (batch_size, memory_size, num_base)
+        # Gt = self.decay_kernel.integrations(t_stop.numpy(), t_start.numpy())
+        # Gt = torch.from_numpy(Gt)
+        # Gt = Gt.type(torch.FloatTensor)                                     # (batch_size, memory_size, num_base)
+        Gt = self.decay_kernel.integrations(t_stop, t_start)
 
         pHi = 0
         history2 = history.unsqueeze(1).repeat(1, all_types.size(0), 1)     # (batch_size, num_type, memory_size)
@@ -265,9 +267,9 @@ class FactorizedEndogenousImpact(BasicEndogenousImpact):
         history = sample_dict['cjs']       # (batch_size, memory_size)
 
         dts = event_time.repeat(1, history_time.size(1)) - history_time  # (batch_size, memory_size)
-        gt = self.decay_kernel.values(dts.numpy())
-        gt = torch.from_numpy(gt)
-        gt = gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
+        gt = self.decay_kernel.values(dts)
+        # gt = torch.from_numpy(gt)
+        # gt = gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
 
         phi_c = 0
         for m in range(self.num_base):
@@ -304,9 +306,9 @@ class FactorizedEndogenousImpact(BasicEndogenousImpact):
         last_time = history_time[:, -1].unsqueeze(1)
         t_start = last_time.repeat(1, history_time.size(1)) - history_time  # (batch_size, memory_size)
         t_stop = dts                                                     # (batch_size, memory_size)
-        Gt = self.decay_kernel.integrations(t_stop.numpy(), t_start.numpy())
-        Gt = torch.from_numpy(Gt)
-        Gt = Gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
+        Gt = self.decay_kernel.integrations(t_stop, t_start)
+        # Gt = torch.from_numpy(Gt)
+        # Gt = Gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
 
         pHi = 0
         for m in range(self.num_base):
@@ -436,13 +438,15 @@ class LinearEndogenousImpact(BasicEndogenousImpact):
             history_feat = torch.transpose(history_feat, 1, 2)  # (batch_size, dim_feature, memory_size)
 
         dts = event_time.repeat(1, history_time.size(1)) - history_time  # (batch_size, memory_size)
-        gt = self.decay_kernel.values(dts.numpy())
-        gt = torch.from_numpy(gt)
-        gt = gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
+        gt = self.decay_kernel.values(dts)
+        # gt = torch.from_numpy(gt)
+        # gt = gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
 
         phi_c = 0
         for m in range(self.num_base):
             u_cm = self.basis[m](events)                 # (batch_size, 1, dim_feature)
+            # print(u_cm.size())
+            # print(history_feat.size())
             A_cm = torch.bmm(u_cm, history_feat)         # (batch_size, 1, memory_size)
             A_cm = self.act(A_cm)
             phi_c += torch.bmm(A_cm, gt[:, :, m].unsqueeze(2))  # (batchsize, 1, 1)
@@ -479,14 +483,16 @@ class LinearEndogenousImpact(BasicEndogenousImpact):
         last_time = history_time[:, -1].unsqueeze(1)
         t_start = last_time.repeat(1, history_time.size(1)) - history_time  # (batch_size, memory_size)
         t_stop = dts  # (batch_size, memory_size)
-        Gt = self.decay_kernel.integrations(t_stop.numpy(), t_start.numpy())
-        Gt = torch.from_numpy(Gt)
-        Gt = Gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
+        Gt = self.decay_kernel.integrations(t_stop, t_start)
+        # Gt = torch.from_numpy(Gt)
+        # Gt = Gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
 
         pHi = 0
         for m in range(self.num_base):
             u_all = self.basis[m](all_types)             # (num_type, 1, dim_embedding)
             u_all = u_all.squeeze(1)                     # (num_type, dim_embedding)
+            # print(u_all.size())
+            # print(history_feat.size())
             A_all = torch.matmul(u_all, history_feat)    # (batchsize, num_type, memory_size)
             A_all = self.act(A_all)
             pHi += torch.bmm(A_all, Gt[:, :, m].unsqueeze(2))   # (batchsize, num_type, 1)
@@ -523,7 +529,7 @@ class LinearEndogenousImpact(BasicEndogenousImpact):
         return A_all
 
 
-class BiLinearEndogenousImpact(BasicEndogenousImpact):
+class BilinearEndogenousImpact(BasicEndogenousImpact):
     """
     The class of bilinear endogenous impact functions
     phi_{cc'}(t) = sum_m (f_{c}^T * W_m * f_{c'}) * kernel_m(t)
@@ -542,7 +548,7 @@ class BiLinearEndogenousImpact(BasicEndogenousImpact):
             parameter_set = {'activation': value = names of activation layers ('identity', 'relu', 'softplus')
                              'dim_feature': value = the dimension of feature vector (embedding)}
         """
-        super(BiLinearEndogenousImpact, self).__init__(num_type, kernel)
+        super(BilinearEndogenousImpact, self).__init__(num_type, kernel)
         activation = parameter_set['activation']
         dim_feature = parameter_set['dim_feature']
         if activation is None:
@@ -615,9 +621,9 @@ class BiLinearEndogenousImpact(BasicEndogenousImpact):
             history_feat = torch.transpose(history_feat, 1, 2)  # (batch_size, dim_feature, memory_size)
 
         dts = event_time.repeat(1, history_time.size(1)) - history_time  # (batch_size, memory_size)
-        gt = self.decay_kernel.values(dts.numpy())
-        gt = torch.from_numpy(gt)
-        gt = gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
+        gt = self.decay_kernel.values(dts)
+        # gt = torch.from_numpy(gt)
+        # gt = gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
 
         phi_c = 0
         for m in range(self.num_base):
@@ -664,9 +670,9 @@ class BiLinearEndogenousImpact(BasicEndogenousImpact):
         last_time = history_time[:, -1].unsqueeze(1)
         t_start = last_time.repeat(1, history_time.size(1)) - history_time  # (batch_size, memory_size)
         t_stop = dts                                                                  # (batch_size, memory_size)
-        Gt = self.decay_kernel.integrations(t_stop.numpy(), t_start.numpy())
-        Gt = torch.from_numpy(Gt)
-        Gt = Gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
+        Gt = self.decay_kernel.integrations(t_stop, t_start)
+        # Gt = torch.from_numpy(Gt)
+        # Gt = Gt.type(torch.FloatTensor)                                  # (batch_size, memory_size, num_base)
 
         pHi = 0
         for m in range(self.num_base):

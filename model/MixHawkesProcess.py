@@ -23,7 +23,7 @@ class MixHawkesProcessModel(object):
     The class of a mixture model of generalized Hawkes processes
     contains most of necessary function.
     """
-    def __init__(self, num_type, num_cluster, num_sequence, mu_dict, alpha_dict, kernel_dict, activation):
+    def __init__(self, num_type, num_cluster, num_sequence, mu_dict, alpha_dict, kernel_dict, activation, use_cuda):
         """
         Initialize a mixture model of generalized Hawkes processes
         :param num_type: int, the number of event types
@@ -50,6 +50,7 @@ class MixHawkesProcessModel(object):
             if len(kernel_dict) == num_cluster:
                 the mixture components can have different activation functions
         """
+        self.device = torch.device('cuda:0' if use_cuda else 'cpu')
         self.model_name = 'A Mixture of Hawkes Processes'
         self.num_type = num_type
         self.num_cluster = num_cluster
@@ -65,7 +66,9 @@ class MixHawkesProcessModel(object):
             decayKernel = getattr(model.DecayKernelFamily, kernel_dict[k]['model_name'])
 
             mu_model = exogenousIntensity(num_type, mu_dict[k]['parameter_set'])
-            kernel_model = decayKernel(kernel_dict[k]['parameter_set'])
+            # kernel_model = decayKernel(kernel_dict[k]['parameter_set'])
+            kernel_para = kernel_dict[k]['parameter_set'].to(self.device)
+            kernel_model = decayKernel(kernel_para)
             alpha_model = endogenousImpacts(num_type, kernel_model, alpha_dict[k]['parameter_set'])
             if m == 0:
                 self.lambda_model = nn.ModuleList([HawkesProcessIntensity(mu_model, alpha_model, self.activation[m])])
@@ -105,8 +108,8 @@ class MixHawkesProcessModel(object):
         """
         device = torch.device('cuda:0' if use_cuda else 'cpu')
         self.lambda_model.to(device)
-        self.responsibility.to(device)
-        self.prob_cluster.to(device)
+        self.responsibility = self.responsibility.to(device)
+        self.prob_cluster = self.prob_cluster.to(device)
         best_model = None
         self.lambda_model.train()
 
@@ -139,8 +142,8 @@ class MixHawkesProcessModel(object):
             start = time.time()
 
             log_weight = self.prob_cluster.log().view(1, self.num_cluster).repeat(self.num_sequence, 1)
-            log_responsibility = torch.zeros(self.responsibility.size())
-            num_responsibllity = torch.zeros(self.responsibility.size())
+            log_responsibility = 0 * self.responsibility
+            num_responsibllity = 0 * self.responsibility
             log_responsibility = log_responsibility.to(device)
             num_responsibllity = num_responsibllity.to(device)
             for batch_idx, samples in enumerate(dataloader):
@@ -278,7 +281,7 @@ class MixHawkesProcessModel(object):
         self.lambda_model.eval()
 
         # cluster probability
-        prob_cluster = self.prob_cluster.numpy()
+        prob_cluster = self.prob_cluster.cpu().numpy()
 
         Cs = torch.LongTensor(list(range(len(history['type2idx']))))
         Cs = Cs.view(-1, 1)
@@ -308,6 +311,7 @@ class MixHawkesProcessModel(object):
 
             # initialize the input of intensity function
             ci = Cs[1:, :]
+            ci = ci.to(device)
             ti = torch.FloatTensor([t_now])
             ti = ti.to(device)
             ti = ti.view(1, 1)
@@ -317,18 +321,24 @@ class MixHawkesProcessModel(object):
             times = history['sequences'][i]['times']
             if times is None:
                 tjs = torch.FloatTensor([new_data['sequences'][i]['t_start']])
+                tjs = tjs.to(device)
                 cjs = torch.LongTensor([0])
+                cjs = cjs.to(device)
             else:
                 if memory_size > times.shape[0]:
                     tjs = torch.from_numpy(times)
                     tjs = tjs.type(torch.FloatTensor)
+                    tjs = tjs.to(device)
                     cjs = torch.from_numpy(events)
                     cjs = cjs.type(torch.LongTensor)
+                    cjs = cjs.to(device)
                 else:
                     tjs = torch.from_numpy(times[-memory_size:])
                     tjs = tjs.type(torch.FloatTensor)
+                    tjs = tjs.to(device)
                     cjs = torch.from_numpy(events[-memory_size:])
                     cjs = cjs.type(torch.LongTensor)
+                    cjs = cjs.to(device)
 
             tjs = tjs.to(device)
             tjs = tjs.view(1, -1)
@@ -347,6 +357,7 @@ class MixHawkesProcessModel(object):
                 fsn = torch.from_numpy(fsn)
                 fsn = fsn.type(torch.FloatTensor)
                 fsn = fsn.view(1, -1).repeat(ci.size(0), 1)
+                fsn = fsn.to(device)
             else:
                 fsn = None
 
@@ -355,8 +366,10 @@ class MixHawkesProcessModel(object):
                 fcjs = None
             else:
                 fci = FCs[ci[:, 0], :]
+                fci = fci.to(device)
                 fcjs = FCs[cjs, :]
                 fcjs = torch.transpose(fcjs, 1, 2)
+                fcjs = fcjs.to(device)
 
             sample_dict = {'ti': ti,
                            'tjs': tjs,
@@ -378,7 +391,7 @@ class MixHawkesProcessModel(object):
                 s = np.random.exponential(1 / mt)
                 if s < interval:
                     sample_dict['ti'] = sample_dict['ti'] + s - interval
-                    ti = sample_dict['ti'].numpy()
+                    ti = sample_dict['ti'].cpu().numpy()
                     t_now = ti[0, 0]  # float
                     lambda_s = self.lambda_model[cluster_id].intensity(sample_dict)
                     ms = float(lambda_s.sum())
@@ -386,7 +399,7 @@ class MixHawkesProcessModel(object):
                     u = np.random.rand()
                     ratio = ms / mt
                     if ratio > u:  # generate a new event
-                        prob = lambda_s.data.numpy() / ms
+                        prob = lambda_s.data.cpu().numpy() / ms
                         prob = prob[:, 0]
                         ci = np.random.choice(self.num_type - 1, p=prob) + 1  # int
 
@@ -412,7 +425,7 @@ class MixHawkesProcessModel(object):
                             sample_dict['fcjs'] = FCs[sample_dict['cjs'], :]
                             sample_dict['fcjs'] = torch.transpose(sample_dict['fcjs'], 1, 2)
                 else:
-                    ti = sample_dict['ti'].numpy()
+                    ti = sample_dict['ti'].cpu().numpy()
                     t_now = ti[0, 0]  # float
 
             if i % 500 == 0:
