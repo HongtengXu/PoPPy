@@ -45,15 +45,15 @@ def load_sequences_csv(file_name: str, domain_names: Dict):
                 'sequences': []}
 
     df = pd.read_csv(file_name)
-    type2idx = {'<virtual>': 0}
-    idx2type = {0: '<virtual>'}
+    type2idx = {}
+    idx2type = {}
     seq2idx = {}
     idx2seq = {}
 
     logger.info('Count the number of sequences...')
     start = time.time()
     seq_idx = 0
-    type_idx = 1
+    type_idx = 0
     for i, row in df.iterrows():
         seq_name = str(row[domain_names['seq_id']])
         event_type = str(row[domain_names['event']])
@@ -75,7 +75,7 @@ def load_sequences_csv(file_name: str, domain_names: Dict):
         if i % 10000 == 0:
             logger.info('{} events have been processed... Time={}ms.'.format(i, round(1000*(time.time() - start))))
     logger.info('Done! {} sequences with {} event types are found in {}ms'.format(
-        seq_idx+1, type_idx, round(1000*(time.time() - start))))
+        seq_idx+1, type_idx+1, round(1000*(time.time() - start))))
 
     logger.info('Build proposed database for the sequences...')
     start2 = time.time()

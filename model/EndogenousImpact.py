@@ -30,12 +30,16 @@ class BasicEndogenousImpact(nn.Module):
         self.num_type = num_type
         self.dim_embedding = num_type
         for m in range(self.num_base):
-            emb = nn.Embedding(self.num_type, self.dim_embedding, padding_idx=0)
+            # emb = nn.Embedding(self.num_type, self.dim_embedding, padding_idx=0)
+            # emb.weight = nn.Parameter(
+            #     torch.cat([torch.zeros(self.num_type, 1),
+            #                torch.FloatTensor(self.num_type, self.dim_embedding - 1).uniform_(0.01 / self.dim_embedding,
+            #                                                                                  1 / self.dim_embedding)],
+            #               dim=1))
+            emb = nn.Embedding(self.num_type, self.dim_embedding)
             emb.weight = nn.Parameter(
-                torch.cat([torch.zeros(self.num_type, 1),
-                           torch.FloatTensor(self.num_type, self.dim_embedding - 1).uniform_(0.01 / self.dim_embedding,
-                                                                                             1 / self.dim_embedding)],
-                          dim=1))
+                torch.FloatTensor(self.num_type, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
+                                                                              1 / self.dim_embedding))
             if m == 0:
                 self.basis = nn.ModuleList([emb])
             else:

@@ -398,7 +398,9 @@ class EventSampler(Dataset):
             t_start = seq_i['t_start']
             for j in range(len(events)):
                 target = events[j]
-                former = np.zeros((memorysize,), dtype=np.int)
+                # former = np.zeros((memorysize,), dtype=np.int)
+                former = np.random.permutation(len(self.database['type2idx']))
+                former = former[:memorysize]
 
                 target_t = times[j]
                 former_t = t_start * np.ones((memorysize,))
@@ -527,7 +529,9 @@ class SequenceSampler(Dataset):
                 former = events
                 former_t = times
             else:
-                former = np.zeros((memorysize,), dtype=np.int)
+                # former = np.zeros((memorysize,), dtype=np.int)
+                former = np.random.permutation(len(self.database['type2idx']))
+                former = former[:memorysize]
                 former_t = t_start * np.ones((memorysize,))
 
                 if 0 < times.shape[0] < memorysize:
