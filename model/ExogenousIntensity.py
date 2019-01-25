@@ -25,12 +25,10 @@ class BasicExogenousIntensity(nn.Module):
 
         self.num_type = num_type
         self.dim_embedding = 1
-        self.emb = nn.Embedding(self.num_type, self.dim_embedding, padding_idx=0)
+        self.emb = nn.Embedding(self.num_type, self.dim_embedding)
         self.emb.weight = nn.Parameter(
-            torch.cat([torch.zeros(1, self.dim_embedding),
-                       torch.FloatTensor(self.num_type - 1, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
-                                                                                         1 / self.dim_embedding)],
-                      dim=0))
+                       torch.FloatTensor(self.num_type, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
+                                                                                     1 / self.dim_embedding))
 
     def print_info(self):
         """

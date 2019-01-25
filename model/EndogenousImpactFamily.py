@@ -54,12 +54,10 @@ class NaiveEndogenousImpact(BasicEndogenousImpact):
         self.num_type = num_type
         self.dim_embedding = num_type
         for m in range(self.num_base):
-            emb = nn.Embedding(self.num_type, self.dim_embedding, padding_idx=0)
+            emb = nn.Embedding(self.num_type, self.dim_embedding)
             emb.weight = nn.Parameter(
-                torch.cat([torch.zeros(self.num_type, 1),
-                           torch.FloatTensor(self.num_type, self.dim_embedding - 1).uniform_(0.01 / self.dim_embedding,
-                                                                                             1 / self.dim_embedding)],
-                          dim=1))
+                           torch.FloatTensor(self.num_type, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
+                                                                                         1 / self.dim_embedding))
             if m == 0:
                 self.basis = nn.ModuleList([emb])
             else:
@@ -214,20 +212,16 @@ class FactorizedEndogenousImpact(BasicEndogenousImpact):
         self.num_type_v = num_type
         self.dim_embedding = dim_embedding
         for m in range(self.num_base):
-            emb_u = nn.Embedding(self.num_type_u, self.dim_embedding, padding_idx=0)
-            emb_v = nn.Embedding(self.num_type_v, self.dim_embedding, padding_idx=0)
+            emb_u = nn.Embedding(self.num_type_u, self.dim_embedding)
+            emb_v = nn.Embedding(self.num_type_v, self.dim_embedding)
             emb_u.weight = nn.Parameter(
-                torch.cat([torch.zeros(1, self.dim_embedding),
-                           torch.FloatTensor(self.num_type_u-1, self.dim_embedding).uniform_(
+                           torch.FloatTensor(self.num_type_u, self.dim_embedding).uniform_(
                                0.01 / self.dim_embedding,
-                               1 / self.dim_embedding)],
-                          dim=0))
+                               1 / self.dim_embedding))
             emb_v.weight = nn.Parameter(
-                torch.cat([torch.zeros(1, self.dim_embedding),
-                           torch.FloatTensor(self.num_type_v-1, self.dim_embedding).uniform_(
+                           torch.FloatTensor(self.num_type_v, self.dim_embedding).uniform_(
                                0.01 / self.dim_embedding,
-                               1 / self.dim_embedding)],
-                          dim=0))
+                               1 / self.dim_embedding))
             if m == 0:
                 self.basis_u = nn.ModuleList([emb_u])
                 self.basis_v = nn.ModuleList([emb_v])
@@ -383,23 +377,19 @@ class LinearEndogenousImpact(BasicEndogenousImpact):
         self.num_type = num_type
         self.dim_embedding = dim_feature
         for m in range(self.num_base):
-            emb = nn.Embedding(self.num_type, self.dim_embedding, padding_idx=0)
+            emb = nn.Embedding(self.num_type, self.dim_embedding)
             emb.weight = nn.Parameter(
-                torch.cat([torch.zeros(1, self.dim_embedding),
-                           torch.FloatTensor(self.num_type-1, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
-                                                                                           1 / self.dim_embedding)],
-                          dim=0))
+                           torch.FloatTensor(self.num_type, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
+                                                                                         1 / self.dim_embedding))
             if m == 0:
                 self.basis = nn.ModuleList([emb])
             else:
                 self.basis.append(emb)
 
-        self.emb_event = nn.Embedding(self.num_type, self.dim_embedding, padding_idx=0)
+        self.emb_event = nn.Embedding(self.num_type, self.dim_embedding)
         self.emb_event.weight = nn.Parameter(
-            torch.cat([torch.zeros(1, self.dim_embedding),
-                       torch.FloatTensor(self.num_type-1, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
-                                                                                       1 / self.dim_embedding)],
-                      dim=0))
+                       torch.FloatTensor(self.num_type, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
+                                                                                       1 / self.dim_embedding))
 
         if self.activation == 'relu':
             self.act = nn.ReLU()
@@ -572,12 +562,10 @@ class BilinearEndogenousImpact(BasicEndogenousImpact):
             else:
                 self.basis.append(emb)
 
-        self.emb_event = nn.Embedding(self.num_type, self.dim_embedding, padding_idx=0)
+        self.emb_event = nn.Embedding(self.num_type, self.dim_embedding)
         self.emb_event.weight = nn.Parameter(
-            torch.cat([torch.zeros(1, self.dim_embedding),
-                       torch.FloatTensor(self.num_type - 1, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
-                                                                                         1 / self.dim_embedding)],
-                      dim=0))
+                       torch.FloatTensor(self.num_type, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
+                                                                                     1 / self.dim_embedding))
 
         if self.activation == 'relu':
             self.act = nn.ReLU()

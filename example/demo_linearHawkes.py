@@ -14,11 +14,11 @@ from preprocess.DataOperation import data_info, EventSampler, enumerate_all_even
 
 if __name__ == '__main__':
     # hyper-parameters
-    memory_size = 3
+    memory_size = 2
     batch_size = 128
     use_cuda = True
     use_cuda = use_cuda and torch.cuda.is_available()
-    seed = 1
+    seed = 2
     torch.manual_seed(seed)
     if use_cuda:
         torch.cuda.manual_seed(seed)

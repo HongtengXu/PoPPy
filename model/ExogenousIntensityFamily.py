@@ -46,12 +46,10 @@ class NaiveExogenousIntensity(BasicExogenousIntensity):
 
         self.num_type = num_type
         self.dim_embedding = 1
-        self.emb = nn.Embedding(self.num_type, self.dim_embedding, padding_idx=0)
+        self.emb = nn.Embedding(self.num_type, self.dim_embedding)
         self.emb.weight = nn.Parameter(
-            torch.cat([torch.zeros(1, self.dim_embedding),
-                       torch.FloatTensor(self.num_type - 1, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
-                                                                                         1 / self.dim_embedding)],
-                      dim=0))
+                       torch.FloatTensor(self.num_type, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
+                                                                                     1 / self.dim_embedding))
         if self.activation == 'relu':
             self.act = nn.ReLU()
         elif self.activation == 'softplus':
@@ -133,12 +131,10 @@ class LinearExogenousIntensity(BasicExogenousIntensity):
         self.dim_embedding = dim_feature
         self.num_seq = num_seq
 
-        self.emb = nn.Embedding(self.num_type, self.dim_embedding, padding_idx=0)
+        self.emb = nn.Embedding(self.num_type, self.dim_embedding)
         self.emb.weight = nn.Parameter(
-            torch.cat([torch.zeros(1, self.dim_embedding),
-                       torch.FloatTensor(self.num_type - 1, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
-                                                                                         1 / self.dim_embedding)],
-                      dim=0))
+                       torch.FloatTensor(self.num_type, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
+                                                                                     1 / self.dim_embedding))
         self.emb_seq = nn.Embedding(self.num_seq, self.dim_embedding)
         self.emb_seq.weight = nn.Parameter(
             torch.FloatTensor(self.num_seq, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
@@ -245,16 +241,14 @@ class NeuralExogenousIntensity(BasicExogenousIntensity):
         self.dim_hidden = dim_hidden
         self.num_seq = num_seq
 
-        self.emb = nn.Embedding(self.num_type, self.dim_embedding, padding_idx=0)
+        self.emb = nn.Embedding(self.num_type, self.dim_embedding)
         self.emb.weight = nn.Parameter(
-            torch.cat([torch.zeros(1, self.dim_embedding),
                        torch.FloatTensor(self.num_type - 1, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
-                                                                                         1 / self.dim_embedding)],
-                      dim=0))
+                                                                                         1 / self.dim_embedding))
         self.emb_seq = nn.Embedding(self.num_seq, self.dim_embedding)
         self.emb_seq.weight = nn.Parameter(
-            torch.cat(torch.FloatTensor(self.num_seq, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
-                                                                                   1 / self.dim_embedding)))
+            torch.FloatTensor(self.num_seq, self.dim_embedding).uniform_(0.01 / self.dim_embedding,
+                                                                                   1 / self.dim_embedding))
         self.softplus = nn.Softplus()
         self.linear1 = nn.Linear(self.dim_embedding, self.dim_hidden)
         self.linear2 = nn.Linear(self.dim_feature, self.dim_hidden)
