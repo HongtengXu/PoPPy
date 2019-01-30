@@ -235,7 +235,8 @@ class PointProcessModel(object):
             t_now = new_data['sequences'][i]['t_start']+0.01
 
             # initialize the input of intensity function
-            ci = Cs[1:, :]
+            ci = Cs
+            # print(ci)
             ci = ci.to(device)
             ti = torch.FloatTensor([t_now])
             ti = ti.to(device)
@@ -247,7 +248,7 @@ class PointProcessModel(object):
             if times is None:
                 tjs = torch.FloatTensor([new_data['sequences'][i]['t_start']])
                 tjs = tjs.to(device)
-                cjs = torch.LongTensor([0])
+                cjs = torch.LongTensor([np.random.permutation(self.num_type)[0]])
                 cjs = cjs.to(device)
             else:
                 if memory_size > times.shape[0]:
@@ -325,7 +326,9 @@ class PointProcessModel(object):
                     if ratio > u:  # generate a new event
                         prob = lambda_s.data.cpu().numpy()/ms
                         prob = prob[:, 0]
-                        ci = np.random.choice(self.num_type-1, p=prob)+1  # int
+                        # print(prob.shape)
+                        # print(self.num_type)
+                        ci = np.random.choice(self.num_type, p=prob)  # int
 
                         # add to new sequence
                         times_tmp.append(t_now)
@@ -335,11 +338,13 @@ class PointProcessModel(object):
                         # update batch_dict
                         ti = torch.FloatTensor([t_now])
                         ti = ti.to(device)
-                        ti = ti.view(1, 1).repeat(self.num_type-1, 1)
+                        ti = ti.view(1, 1).repeat(self.num_type, 1)
                         ci = torch.LongTensor([ci])
                         ci = ci.to(device)
-                        ci = ci.view(1, 1).repeat(self.num_type-1, 1)
+                        ci = ci.view(1, 1).repeat(self.num_type, 1)
                         if memory_size > sample_dict['cjs'].size(1):
+                            # print(sample_dict['cjs'].size())
+                            # print(ci.size())
                             sample_dict['cjs'] = torch.cat([sample_dict['cjs'], ci], dim=1)
                             sample_dict['tjs'] = torch.cat([sample_dict['tjs'], ti], dim=1)
                         else:
