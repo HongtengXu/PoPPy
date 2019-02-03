@@ -108,5 +108,86 @@ class CrossEntropy(nn.Module):
         return self.entropy_loss(Lambda_t, c[:, 0])
 
 
+class GromovWassersteinDiscrepancy(nn.Module):
+    """
+    Calculate Gromov-Wasserstein discrepancy given optimal transport and cost matrix
+    """
+    def __init__(self, loss_type):
+        super(GromovWassersteinDiscrepancy, self).__init__()
+        self.loss_type = loss_type
+
+    def forward(self, As, At, Trans_st, p_s, p_t):
+        """
+        Calculate GW discrepancy
+        :param As: learnable cost matrix of source
+        :param At: learnable cost matrix of target
+        :param Trans_st: the fixed optimal transport
+        :param p_s: the fixed distribution of source
+        :param p_t: the fixed distribution of target
+        :return: dgw
+        """
+        ns = p_s.size(0)
+        nt = p_t.size(0)
+        if self.loss_type == 'L2':
+            # f1(a) = a^2, f2(b) = b^2, h1(a) = a, h2(b) = 2b
+            # cost_st = f1(cost_s)*mu_s*1_nt^T + 1_ns*mu_t^T*f2(cost_t)^T
+            # cost = cost_st - h1(cost_s)*trans*h2(cost_t)^T
+            f1_st = torch.matmul(As ** 2, p_s).repeat(1, nt)
+            f2_st = torch.matmul(torch.t(p_t), torch.t(At ** 2)).repeat(ns, 1)
+            cost_st = f1_st + f2_st
+            cost = cost_st - 2 * torch.matmul(torch.matmul(As, Trans_st), torch.t(At))
+        else:
+            # f1(a) = a*log(a) - a, f2(b) = b, h1(a) = a, h2(b) = log(b)
+            # cost_st = f1(cost_s)*mu_s*1_nt^T + 1_ns*mu_t^T*f2(cost_t)^T
+            # cost = cost_st - h1(cost_s)*trans*h2(cost_t)^T
+            f1_st = torch.matmul(As * torch.log(As + 1e-5) - As, p_s).repeat(1, nt)
+            f2_st = torch.matmul(torch.t(p_t), torch.t(At)).repeat(ns, 1)
+            cost_st = f1_st + f2_st
+            cost = cost_st - torch.matmul(torch.matmul(As, Trans_st), torch.t(torch.log(At + 1e-5)))
+
+        d_gw = (cost * Trans_st).sum()
+        return d_gw
+
+
+class WassersteinDiscrepancy(nn.Module):
+    """
+    Calculate Wasserstein discrepancy given optimal transport and
+    """
+    def __init__(self, loss_type):
+        super(WassersteinDiscrepancy, self).__init__()
+        self.loss_type = loss_type
+
+    def forward(self, mu_s, mu_t, Trans_st, p_s, p_t):
+        """
+        Calculate GW discrepancy
+        :param mu_s: learnable base intensity of source
+        :param mu_t: learnable base intensity of target
+        :param Trans_st: the fixed optimal transport
+        :param p_s: the fixed distribution of source
+        :param p_t: the fixed distribution of target
+        :return: dgw
+        """
+        ns = p_s.size(0)
+        nt = p_t.size(0)
+        if self.loss_type == 'L2':
+            # f1(a) = a^2, f2(b) = b^2, h1(a) = a, h2(b) = 2b
+            # cost_st = f1(cost_s)*mu_s*1_nt^T + 1_ns*mu_t^T*f2(cost_t)^T
+            # cost = cost_st - h1(cost_s)*trans*h2(cost_t)^T
+            f1_st = (mu_s ** 2).repeat(1, nt)
+            f2_st = torch.t(mu_t ** 2).repeat(ns, 1)
+            cost_st = f1_st + f2_st
+            cost = cost_st - 2 * torch.matmul(mu_s, torch.t(mu_t))
+        else:
+            # f1(a) = a*log(a) - a, f2(b) = b, h1(a) = a, h2(b) = log(b)
+            # cost_st = f1(cost_s)*mu_s*1_nt^T + 1_ns*mu_t^T*f2(cost_t)^T
+            # cost = cost_st - h1(cost_s)*trans*h2(cost_t)^T
+            f1_st = (mu_s ** 2).repeat(1, nt)
+            f2_st = torch.t(mu_t ** 2).repeat(ns, 1)
+            cost = f1_st * torch.log(f1_st/(f2_st + 1e-5)) - f1_st + f2_st
+        d_w = (cost * Trans_st).sum()
+        return d_w
+
+
+
 
 
