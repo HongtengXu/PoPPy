@@ -396,7 +396,6 @@ class EventSampler(Dataset):
             times = seq_i['times']
             events = seq_i['events']
             t_start = seq_i['t_start']
-            print(events.shape)
             for j in range(len(events)):
                 target = events[j]
                 # former = np.zeros((memorysize,), dtype=np.int)
