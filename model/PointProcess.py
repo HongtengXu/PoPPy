@@ -161,7 +161,7 @@ class PointProcessModel(object):
         for batch_idx, samples in enumerate(dataloader):
             ci, batch_dict = samples2dict(samples, device, Cs, FCs)
             lambda_t, Lambda_t = self.lambda_model(batch_dict)
-            loss += self.loss_function(lambda_t, Lambda_t, ci)
+            loss += self.loss_function(lambda_t, Lambda_t, ci).item()
 
             # display training processes
             if batch_idx % 100 == 0:
